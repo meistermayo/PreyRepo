@@ -13412,6 +13412,7 @@ MonoBehaviour:
   moveSpeedMax: 5
   jumpSpeed: 10
   fallSpeedMax: 20
+  slopeFriction: 0.2
   wall_jumpSpeed: 12
   wall_moveSpeed: 12
   biteRange: 1

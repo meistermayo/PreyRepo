@@ -10,6 +10,7 @@ public class PlayerMovement : MonoBehaviour {
 	[SerializeField] float moveSpeedMax;
 	[SerializeField] float jumpSpeed;
 	[SerializeField] float fallSpeedMax;
+	[SerializeField] float slopeFriction;
 
 	[Header("Wall Movement")]
 	[SerializeField] float wall_jumpSpeed;
@@ -33,6 +34,7 @@ public class PlayerMovement : MonoBehaviour {
 	bool isClinging;
 	bool facingRight=true;
 	bool isHolding;
+	bool canCheckForSlope;
 	Pickupable heldItem;
 	[SerializeField] LayerMask groundLayer;
 	[SerializeField] Transform itemHolder;
@@ -75,6 +77,7 @@ public class PlayerMovement : MonoBehaviour {
 
 	void FixedUpdate()
 	{
+		NormalizeSlope ();
 	}
 
 	void GetInput()
@@ -111,11 +114,13 @@ public class PlayerMovement : MonoBehaviour {
 
 	void Jump()
 	{
+		canCheckForSlope = CheckDown(1f).collider != null;
 		CheckGround ();
 		if (jump_held) {
 			//CheckGround ();
 			if (canJump) {
 				animator.SetTrigger ("Jump");
+				canCheckForSlope = false;
 				canJump = false;
 				body.velocity = new Vector2 (body.velocity.x, jumpSpeed);
 				audioManager.Play (SFX_SOLOMON.JUMP, false);
@@ -316,13 +321,27 @@ public class PlayerMovement : MonoBehaviour {
 		}
 		return false;
 	}
+
+
+	/**/
+	// @NOTE Must be called from FixedUpdate() to work properly
+	void NormalizeSlope () {
+		if (canCheckForSlope) {
+			RaycastHit2D hit = Physics2D.Raycast(transform.position, -Vector2.up, 1f, groundLayer);										//	Raycast directly downwards
+			if (hit.collider != null && Mathf.Abs(hit.normal.x) > 0.1f) {																//	if the normal angle xcomponent is significant
+																																		// Apply the opposite force against the slope force 																	//	
+				body.velocity = new Vector2(body.velocity.x - (hit.normal.x * slopeFriction), 0f);										//	counterbalance for friction
+				Vector3 pos = transform.position;																						//	Move Player up or down to compensate for the slope below them															//	
+				pos.y += -hit.normal.x * Mathf.Abs(body.velocity.x) * Time.deltaTime * (body.velocity.x - hit.normal.x > 0 ? 1 : -1);	//	push player up -- would take awihle to decon.
+				transform.position = pos;
+			}
+		}
+
+	}
+
+
 /*
 TODO::::
-Hinge joints!?!!?!?!?!!? Anitonshuns?!!?!?!?!?
-Jumping
-Jump held
 Walking Correctness
-Slope climbing
-Biting/Walljumping
 */
 }
